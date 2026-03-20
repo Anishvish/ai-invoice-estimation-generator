@@ -2,20 +2,50 @@
 
 Production-ready MVP for interior designers, contractors, and small businesses in India.
 
-## What changed in this version
+An Expo mobile app backed by Spring Boot and PostgreSQL for project management, multi-line estimates, GST calculation, invoice PDF generation, and AI-assisted measurement parsing.
 
-- Multi-line estimates instead of a single measurement only
-- Saved material-rate catalog
-- Refined Expo UI with KPI cards, card-based forms, and a stronger business look
-- Richer invoice PDF with line items and commercial breakdown
-- Idempotent invoice generation for the same estimate
+## Highlights
+
+- Multi-line estimate builder with material-wise pricing
+- GST-ready calculation flow for Indian business use cases
+- PDF invoice generation with itemized commercial breakdown
+- Expo React Native app with polished business UI
+- Saved material-rate catalog for repeated jobs
+- AI parser mock for converting plain language into structured measurement input
+
+## Tech stack
+
+### Backend
+
+- Java 17
+- Spring Boot
+- PostgreSQL
+- Spring Data JPA
+- OpenPDF
+
+### Frontend
+
+- Expo React Native
+- Zustand
+- React Navigation
+- Axios
+
+## Features
+
+- Create and list projects
+- Add multiple measurement line items to one estimate
+- Calculate area, subtotal, GST, discount, and final amount
+- Store and reuse material rates
+- Generate invoice PDFs
+- Parse natural language measurement input
+- Review invoice-ready estimate summaries inside the mobile app
 
 ## Project structure
 
-- `backend/`: Spring Boot 3, Java 17, PostgreSQL, OpenPDF
-- `frontend/`: Expo React Native app with Zustand and React Navigation
+- `backend/` Spring Boot API
+- `frontend/` Expo mobile app
 
-## Backend APIs
+## API summary
 
 - `POST /projects`
 - `GET /projects`
@@ -25,50 +55,58 @@ Production-ready MVP for interior designers, contractors, and small businesses i
 - `GET /materials`
 - `POST /materials`
 
-## Key backend design
+## Backend architecture
 
-- Layered architecture: controller, service, repository, dto, model
+- Layered structure: `controller`, `service`, `repository`, `dto`, `model`
 - Tables: `users`, `projects`, `measurements`, `estimates`, `invoices`, `material_rates`
-- Estimate flow supports multiple measurement items plus additional charges and discount
-- PDF generation uses OpenPDF and writes into `backend/generated-invoices`
-- AI parsing is mocked with deterministic extraction logic and can be swapped later
+- Estimate flow supports multiple measurement items plus additional charges and discounts
+- `POST /invoice/generate` is idempotent for the same estimate
+- Generated PDFs are written to `backend/generated-invoices`
 
-## Key frontend design
+## Mobile app UX
 
-- Expo-managed React Native app
-- Dashboard with KPI cards and recent projects
-- Multi-item estimate builder with AI input and material presets
-- Estimate review with line-item summary and cost breakdown
-- Invoice preview and share flow
-- Zustand store for project, estimate, invoice, draft line items, and materials
+- KPI-based dashboard
+- Card-driven estimate builder
+- Material preset shortcuts
+- AI-assisted item capture
+- Estimate review and invoice preview flow
 
-## Run backend
+## Local setup
 
-1. Create PostgreSQL database `ai_invoice_db`
-2. Update credentials in `backend/src/main/resources/application.yml`
-3. Start the server:
+### 1. Start PostgreSQL
+
+Create a database named `ai_invoice_db`.
+
+Update credentials in:
+
+`backend/src/main/resources/application.yml`
+
+### 2. Run backend
 
 ```bash
 cd backend
 mvn spring-boot:run
 ```
 
-## Run frontend
+Default API base URL:
 
-1. Install dependencies:
+`http://localhost:8080`
+
+### 3. Run frontend
 
 ```bash
 cd frontend
 npm install
-```
-
-2. Start Expo:
-
-```bash
 npm run start
 ```
 
-3. If you test on a physical device, update the API base URL in `frontend/src/services/api.js`
+For Android emulator, the current API base URL is already set to:
+
+`http://10.0.2.2:8080`
+
+If you test on a physical device, update:
+
+`frontend/src/services/api.js`
 
 ## Sample requests
 
@@ -163,8 +201,17 @@ npm run start
 }
 ```
 
-## Notes
+## Deployment notes
 
-- `POST /invoice/generate` is idempotent for the same estimate and returns the existing invoice if already generated.
-- The mobile app is Expo-based, not React Native CLI.
-- The generated PDF path is backend-local; in a real production deployment you would usually expose this through object storage or a signed download URL.
+- The generated PDF path is backend-local in this MVP.
+- For production, expose invoices via object storage or signed URLs.
+- Replace the mocked AI parser with OpenAI or Claude API integration.
+- Add authentication, authorization, and tenant isolation before real client use.
+
+## Suggested next improvements
+
+- Company profile settings with GSTIN, logo, bank account, and UPI QR
+- WhatsApp share flow with invoice summary
+- Client management and project history
+- Offline drafts with sync
+- Real AI extraction using OpenAI function-calling or JSON schema responses
