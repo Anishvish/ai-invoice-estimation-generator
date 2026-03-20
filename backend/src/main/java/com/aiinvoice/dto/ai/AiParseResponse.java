@@ -4,8 +4,10 @@ import java.math.BigDecimal;
 
 public record AiParseResponse(
         String type,
-        BigDecimal length,
-        BigDecimal width,
+        Integer lengthFeet,
+        Integer lengthInches,
+        Integer widthFeet,
+        Integer widthInches,
         String material,
         String rawInput,
         String provider

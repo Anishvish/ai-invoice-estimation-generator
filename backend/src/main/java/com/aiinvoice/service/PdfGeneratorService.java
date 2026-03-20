@@ -2,6 +2,7 @@ package com.aiinvoice.service;
 
 import com.aiinvoice.config.AppProperties;
 import com.aiinvoice.model.Estimate;
+import com.aiinvoice.model.Invoice;
 import com.aiinvoice.model.Measurement;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
@@ -25,7 +26,7 @@ public class PdfGeneratorService {
 
     private final AppProperties appProperties;
 
-    public String generateInvoicePdf(String invoiceNumber, Estimate estimate) {
+    public String generateInvoicePdf(String invoiceNumber, Estimate estimate, Invoice invoice) {
         try {
             Path outputDir = Path.of(appProperties.invoiceOutputDir());
             Files.createDirectories(outputDir);
@@ -39,13 +40,16 @@ public class PdfGeneratorService {
             Font sectionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
             Font textFont = FontFactory.getFont(FontFactory.HELVETICA, 11);
 
-            Paragraph title = new Paragraph(appProperties.companyName() + " Invoice", titleFont);
+            Paragraph title = new Paragraph(invoice.getCompanyName() + " Invoice", titleFont);
             title.setAlignment(Element.ALIGN_CENTER);
             title.setSpacingAfter(16f);
             document.add(title);
 
             document.add(new Paragraph("Invoice No: " + invoiceNumber, textFont));
-            document.add(new Paragraph("Generated On: " + estimate.getCreatedAt().format(DateTimeFormatter.ofPattern("dd MMM yyyy")), textFont));
+            document.add(new Paragraph("Generated On: " + invoice.getGeneratedAt().format(DateTimeFormatter.ofPattern("dd MMM yyyy")), textFont));
+            if (Boolean.TRUE.equals(invoice.getGstApplied()) && invoice.getCompanyGstin() != null) {
+                document.add(new Paragraph("GSTIN: " + invoice.getCompanyGstin(), textFont));
+            }
             document.add(new Paragraph("Client: " + estimate.getProject().getClientName(), textFont));
             document.add(new Paragraph("Project: " + estimate.getProject().getName(), textFont));
             document.add(new Paragraph(" ", textFont));
@@ -55,7 +59,7 @@ public class PdfGeneratorService {
             document.add(new Paragraph(" ", textFont));
 
             document.add(new Paragraph("Cost Breakdown", sectionFont));
-            document.add(buildCostTable(estimate));
+            document.add(buildCostTable(invoice));
 
             document.close();
             return filePath.toAbsolutePath().toString();
@@ -65,40 +69,42 @@ public class PdfGeneratorService {
     }
 
     private PdfPTable buildItemTable(Estimate estimate) {
-        PdfPTable table = new PdfPTable(6);
+        PdfPTable table = new PdfPTable(7);
         table.setWidthPercentage(100);
         table.setSpacingBefore(8f);
         addCell(table, "Type", true);
         addCell(table, "Material", true);
-        addCell(table, "Length", true);
-        addCell(table, "Width", true);
+        addCell(table, "Size", true);
+        addCell(table, "Qty", true);
         addCell(table, "Area", true);
+        addCell(table, "Rate", true);
         addCell(table, "Cost", true);
         for (Measurement measurement : estimate.getMeasurements()) {
             addCell(table, measurement.getType(), false);
             addCell(table, measurement.getMaterial(), false);
-            addCell(table, measurement.getLength().toPlainString(), false);
-            addCell(table, measurement.getWidth().toPlainString(), false);
+            addCell(table, formatDimensions(measurement), false);
+            addCell(table, String.valueOf(measurement.getQuantity()), false);
             addCell(table, measurement.getArea().toPlainString(), false);
+            addCell(table, "INR " + measurement.getRatePerSqft().toPlainString(), false);
             addCell(table, "INR " + measurement.getBaseCost().toPlainString(), false);
         }
         return table;
     }
 
-    private PdfPTable buildCostTable(Estimate estimate) {
+    private PdfPTable buildCostTable(Invoice invoice) {
         PdfPTable table = new PdfPTable(2);
         table.setWidthPercentage(60);
         table.setSpacingBefore(8f);
         addCell(table, "Subtotal", true);
-        addCell(table, "INR " + estimate.getSubtotal().toPlainString(), false);
-        addCell(table, "Additional Charges", true);
-        addCell(table, "INR " + estimate.getAdditionalCharges().toPlainString(), false);
-        addCell(table, "Discount", true);
-        addCell(table, "INR " + estimate.getDiscount().toPlainString(), false);
-        addCell(table, "GST (" + estimate.getGstPercentage().toPlainString() + "%)", true);
-        addCell(table, "INR " + estimate.getGstAmount().toPlainString(), false);
-        addCell(table, "Final Amount", true);
-        addCell(table, "INR " + estimate.getFinalAmount().toPlainString(), false);
+        addCell(table, "INR " + invoice.getSubtotal().toPlainString(), false);
+        addCell(table, "GST", true);
+        addCell(table, Boolean.TRUE.equals(invoice.getGstApplied()) ? "INR " + invoice.getGstAmount().toPlainString() : "Not Applicable", false);
+        addCell(table, "Invoice Total", true);
+        addCell(table, "INR " + invoice.getTotalAmount().toPlainString(), false);
+        addCell(table, "Advance Payment", true);
+        addCell(table, "INR " + invoice.getAdvancePayment().toPlainString(), false);
+        addCell(table, "Balance Due", true);
+        addCell(table, "INR " + invoice.getBalanceDue().toPlainString(), false);
         return table;
     }
 
@@ -109,5 +115,15 @@ public class PdfGeneratorService {
         PdfPCell cell = new PdfPCell(new Phrase(value, font));
         cell.setPadding(8f);
         table.addCell(cell);
+    }
+
+    private String formatDimensions(Measurement measurement) {
+        return toFeetInches(measurement.getLengthInches()) + " x " + toFeetInches(measurement.getWidthInches());
+    }
+
+    private String toFeetInches(int totalInches) {
+        int feet = totalInches / 12;
+        int inches = totalInches % 12;
+        return feet + "ft " + inches + "in";
     }
 }

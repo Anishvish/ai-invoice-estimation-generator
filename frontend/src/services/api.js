@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+export const API_BASE_URL = 'http://10.0.2.2:8080';
+
 const api = axios.create({
-  baseURL: 'http://10.0.2.2:8080',
+  baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -19,6 +21,17 @@ export const projectApi = {
   },
 };
 
+export const companyApi = {
+  list: async () => {
+    const response = await api.get('/companies');
+    return response.data;
+  },
+  create: async (payload) => {
+    const response = await api.post('/companies', payload);
+    return response.data;
+  },
+};
+
 export const estimateApi = {
   calculate: async (payload) => {
     const response = await api.post('/estimate/calculate', payload);
@@ -31,6 +44,7 @@ export const invoiceApi = {
     const response = await api.post('/invoice/generate', payload);
     return response.data;
   },
+  downloadUrl: (invoiceId) => `${API_BASE_URL}/invoice/${invoiceId}/download`,
 };
 
 export const aiApi = {

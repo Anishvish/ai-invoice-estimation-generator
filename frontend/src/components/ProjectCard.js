@@ -12,6 +12,7 @@ export default function ProjectCard({ project, onPress }) {
         <View>
           <Text style={styles.title}>{project.name}</Text>
           <Text style={styles.subtitle}>{project.clientName}</Text>
+          <Text style={styles.company}>{project.companyName}</Text>
         </View>
       </View>
       <Text style={styles.action}>Open</Text>
@@ -58,6 +59,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 13,
     color: colors.textSecondary,
+  },
+  company: {
+    marginTop: 4,
+    fontSize: 12,
+    color: colors.primaryDark,
+    fontWeight: '600',
   },
   action: {
     color: colors.primary,

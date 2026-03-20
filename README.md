@@ -2,13 +2,17 @@
 
 Production-ready MVP for interior designers, contractors, and small businesses in India.
 
-An Expo mobile app backed by Spring Boot and PostgreSQL for project management, multi-line estimates, GST calculation, invoice PDF generation, and AI-assisted measurement parsing.
+An Expo mobile app backed by Spring Boot and PostgreSQL for project management, multi-line estimates, company-based invoicing, advance payment handling, invoice PDF generation, and AI-assisted measurement parsing.
 
 ## Highlights
 
 - Multi-line estimate builder with material-wise pricing
+- Measurements in feet + inches or inches-only
+- Quantity-based line items
 - GST-ready calculation flow for Indian business use cases
-- PDF invoice generation with itemized commercial breakdown
+- Multiple billing companies with GST-enabled or GST-free invoice behavior
+- PDF invoice generation with itemized commercial breakdown and downloadable invoice endpoint
+- Advance payment support with balance due in the final invoice
 - Expo React Native app with polished business UI
 - Saved material-rate catalog for repeated jobs
 - AI parser mock for converting plain language into structured measurement input
@@ -33,10 +37,11 @@ An Expo mobile app backed by Spring Boot and PostgreSQL for project management, 
 ## Features
 
 - Create and list projects
+- Create and reuse multiple company billing profiles
 - Add multiple measurement line items to one estimate
 - Calculate area, subtotal, GST, discount, and final amount
 - Store and reuse material rates
-- Generate invoice PDFs
+- Generate multiple invoice PDFs for the same estimate
 - Parse natural language measurement input
 - Review invoice-ready estimate summaries inside the mobile app
 
@@ -49,8 +54,11 @@ An Expo mobile app backed by Spring Boot and PostgreSQL for project management, 
 
 - `POST /projects`
 - `GET /projects`
+- `POST /companies`
+- `GET /companies`
 - `POST /estimate/calculate`
 - `POST /invoice/generate`
+- `GET /invoice/{invoiceId}/download`
 - `POST /ai/parse`
 - `GET /materials`
 - `POST /materials`
@@ -58,18 +66,21 @@ An Expo mobile app backed by Spring Boot and PostgreSQL for project management, 
 ## Backend architecture
 
 - Layered structure: `controller`, `service`, `repository`, `dto`, `model`
-- Tables: `users`, `projects`, `measurements`, `estimates`, `invoices`, `material_rates`
+- Tables: `users`, `companies`, `projects`, `measurements`, `estimates`, `invoices`, `material_rates`
 - Estimate flow supports multiple measurement items plus additional charges and discounts
-- `POST /invoice/generate` is idempotent for the same estimate
+- Invoice GST is derived from the selected company profile
+- Multiple invoices can be generated for the same estimate
 - Generated PDFs are written to `backend/generated-invoices`
+- GSTIN is masked in API responses to reduce unnecessary PII exposure
 
 ## Mobile app UX
 
 - KPI-based dashboard
+- Company-aware project creation flow
 - Card-driven estimate builder
 - Material preset shortcuts
 - AI-assisted item capture
-- Estimate review and invoice preview flow
+- Estimate review and invoice preview flow with advance payment entry
 
 ## Local setup
 
@@ -87,6 +98,8 @@ Update credentials in:
 cd backend
 mvn spring-boot:run
 ```
+
+If you are upgrading from an older local version of this project, use a fresh database or reset the schema first. This version changes invoice and company relationships, and `ddl-auto=update` may not remove older constraints automatically.
 
 Default API base URL:
 
@@ -115,7 +128,18 @@ If you test on a physical device, update:
 ```json
 {
   "name": "Luxury Apartment Interiors",
-  "clientName": "Ananya Mehta"
+  "clientName": "Client A",
+  "companyId": 1
+}
+```
+
+### Create company
+
+```json
+{
+  "name": "DesignFlow India Pvt. Ltd.",
+  "gstEnabled": true,
+  "gstin": "29ABCDE1234F1Z5"
 }
 ```
 
@@ -127,15 +151,21 @@ If you test on a physical device, update:
   "measurements": [
     {
       "type": "wardrobe",
-      "length": 6,
-      "width": 7,
+      "lengthFeet": 6,
+      "lengthInches": 0,
+      "widthFeet": 7,
+      "widthInches": 0,
+      "quantity": 2,
       "material": "laminate",
       "ratePerSqft": 450
     },
     {
       "type": "tv unit",
-      "length": 5,
-      "width": 3,
+      "lengthFeet": 0,
+      "lengthInches": 72,
+      "widthFeet": 0,
+      "widthInches": 24,
+      "quantity": 1,
       "material": "veneer",
       "ratePerSqft": 780
     }
@@ -150,6 +180,8 @@ If you test on a physical device, update:
 ```json
 {
   "estimateId": 1
+  ,
+  "advancePayment": 10000
 }
 ```
 
@@ -168,45 +200,76 @@ If you test on a physical device, update:
   "estimateId": 1,
   "projectId": 1,
   "projectName": "Luxury Apartment Interiors",
-  "clientName": "Ananya Mehta",
+  "clientName": "Client A",
+  "companyName": "DesignFlow India Pvt. Ltd.",
   "items": [
     {
       "measurementId": 1,
       "type": "wardrobe",
       "material": "laminate",
-      "length": 6.0,
-      "width": 7.0,
-      "area": 42.0,
+      "lengthFeet": 6,
+      "lengthInches": 0,
+      "widthFeet": 7,
+      "widthInches": 0,
+      "quantity": 2,
+      "unitArea": 42.0,
+      "area": 84.0,
       "ratePerSqft": 450.0,
-      "baseCost": 18900.0
+      "baseCost": 37800.0
     },
     {
       "measurementId": 2,
       "type": "tv unit",
       "material": "veneer",
-      "length": 5.0,
-      "width": 3.0,
-      "area": 15.0,
+      "lengthFeet": 6,
+      "lengthInches": 0,
+      "widthFeet": 2,
+      "widthInches": 0,
+      "quantity": 1,
+      "unitArea": 12.0,
+      "area": 12.0,
       "ratePerSqft": 780.0,
-      "baseCost": 11700.0
+      "baseCost": 9360.0
     }
   ],
-  "totalArea": 57.0,
-  "subtotal": 30600.0,
+  "totalArea": 96.0,
+  "subtotal": 47160.0,
   "additionalCharges": 2500.0,
   "discount": 1000.0,
   "gstPercentage": 18.0,
-  "gstAmount": 5778.0,
-  "finalAmount": 37878.0
+  "gstAmount": 8758.8,
+  "finalAmount": 57418.8
+}
+```
+
+## Sample invoice response
+
+```json
+{
+  "invoiceId": 1,
+  "invoiceNumber": "INV-202603201830-1",
+  "downloadUrl": "/invoice/1/download",
+  "companyName": "DesignFlow India Pvt. Ltd.",
+  "companyGstinMasked": "***********F1Z5",
+  "gstApplied": true,
+  "clientName": "Client A",
+  "subtotal": 48660.0,
+  "gstAmount": 8758.8,
+  "totalAmount": 57418.8,
+  "advancePayment": 10000.0,
+  "balanceDue": 47418.8,
+  "generatedAt": "2026-03-20T18:30:00"
 }
 ```
 
 ## Deployment notes
 
 - The generated PDF path is backend-local in this MVP.
+- The API no longer needs to expose raw server file paths to the mobile client; use the download endpoint instead.
 - For production, expose invoices via object storage or signed URLs.
 - Replace the mocked AI parser with OpenAI or Claude API integration.
-- Add authentication, authorization, and tenant isolation before real client use.
+- Add authentication, authorization, encryption at rest, and tenant isolation before real client use.
+- Treat client names, GST numbers, and invoice PDFs as sensitive business data.
 
 ## Suggested next improvements
 

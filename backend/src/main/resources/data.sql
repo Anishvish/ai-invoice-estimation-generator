@@ -4,6 +4,18 @@ WHERE NOT EXISTS (
     SELECT 1 FROM users WHERE email = 'admin@designflow.in'
 );
 
+INSERT INTO companies (name, gst_enabled, gstin, created_at)
+SELECT 'DesignFlow India Pvt. Ltd.', true, '29ABCDE1234F1Z5', NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM companies WHERE name = 'DesignFlow India Pvt. Ltd.'
+);
+
+INSERT INTO companies (name, gst_enabled, gstin, created_at)
+SELECT 'CraftNest Studio', false, null, NOW()
+WHERE NOT EXISTS (
+    SELECT 1 FROM companies WHERE name = 'CraftNest Studio'
+);
+
 INSERT INTO material_rates (category, material, default_rate_per_sqft, created_at)
 SELECT 'wardrobe', 'laminate', 450.00, NOW()
 WHERE NOT EXISTS (

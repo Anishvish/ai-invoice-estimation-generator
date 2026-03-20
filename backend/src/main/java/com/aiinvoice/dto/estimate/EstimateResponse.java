@@ -8,6 +8,7 @@ public record EstimateResponse(
         Long projectId,
         String projectName,
         String clientName,
+        String companyName,
         List<EstimateLineItemResponse> items,
         BigDecimal totalArea,
         BigDecimal subtotal,

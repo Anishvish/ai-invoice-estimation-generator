@@ -76,17 +76,28 @@ public class EstimateService {
     }
 
     private Measurement createMeasurement(Project project, Estimate estimate, MeasurementRequest request) {
+        int totalLengthInches = toTotalInches(request.lengthFeet(), request.lengthInches());
+        int totalWidthInches = toTotalInches(request.widthFeet(), request.widthInches());
+        if (totalLengthInches <= 0 || totalWidthInches <= 0) {
+            throw new BusinessException("Length and width must be greater than zero");
+        }
+
         Measurement measurement = new Measurement();
         measurement.setProject(project);
         measurement.setEstimate(estimate);
         measurement.setType(request.type().trim().toLowerCase());
-        measurement.setLength(scale(request.length()));
-        measurement.setWidth(scale(request.width()));
+        measurement.setLengthInches(totalLengthInches);
+        measurement.setWidthInches(totalWidthInches);
+        measurement.setQuantity(request.quantity());
         measurement.setMaterial(request.material().trim().toLowerCase());
         measurement.setRatePerSqft(scale(request.ratePerSqft()));
-        BigDecimal area = scale(measurement.getLength().multiply(measurement.getWidth()));
-        measurement.setArea(area);
-        measurement.setBaseCost(scale(area.multiply(measurement.getRatePerSqft())));
+        BigDecimal unitArea = scale(BigDecimal.valueOf(totalLengthInches)
+                .multiply(BigDecimal.valueOf(totalWidthInches))
+                .divide(BigDecimal.valueOf(144), 2, RoundingMode.HALF_UP));
+        BigDecimal totalArea = scale(unitArea.multiply(BigDecimal.valueOf(request.quantity())));
+        measurement.setUnitArea(unitArea);
+        measurement.setArea(totalArea);
+        measurement.setBaseCost(scale(totalArea.multiply(measurement.getRatePerSqft())));
         return measurement;
     }
 
@@ -98,8 +109,12 @@ public class EstimateService {
                         measurement.getId(),
                         measurement.getType(),
                         measurement.getMaterial(),
-                        measurement.getLength(),
-                        measurement.getWidth(),
+                        measurement.getLengthInches() / 12,
+                        measurement.getLengthInches() % 12,
+                        measurement.getWidthInches() / 12,
+                        measurement.getWidthInches() % 12,
+                        measurement.getQuantity(),
+                        measurement.getUnitArea(),
                         measurement.getArea(),
                         measurement.getRatePerSqft(),
                         measurement.getBaseCost()
@@ -110,6 +125,7 @@ public class EstimateService {
                 project.getId(),
                 project.getName(),
                 project.getClientName(),
+                project.getCompany().getName(),
                 items,
                 estimate.getTotalArea(),
                 estimate.getSubtotal(),
@@ -123,5 +139,9 @@ public class EstimateService {
 
     private BigDecimal scale(BigDecimal value) {
         return value.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private int toTotalInches(Integer feet, Integer inches) {
+        return (feet * 12) + inches;
     }
 }

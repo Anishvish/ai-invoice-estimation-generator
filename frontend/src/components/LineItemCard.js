@@ -1,8 +1,15 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
 
-export default function LineItemCard({ item, onRemove }) {
+function formatDimension(feet, inches) {
+  if (feet === 0) {
+    return `${inches} in`;
+  }
+  return `${feet} ft ${inches} in`;
+}
+
+function LineItemCard({ item, onRemove }) {
   return (
     <View style={styles.card}>
       <View style={styles.row}>
@@ -10,10 +17,10 @@ export default function LineItemCard({ item, onRemove }) {
         <Text style={styles.amount}>INR {item.baseCost}</Text>
       </View>
       <Text style={styles.meta}>
-        {item.length} ft x {item.width} ft · {item.material}
+        {formatDimension(item.lengthFeet, item.lengthInches)} x {formatDimension(item.widthFeet, item.widthInches)} | {item.material}
       </Text>
       <Text style={styles.meta}>
-        {item.area} sqft at INR {item.ratePerSqft}/sqft
+        Qty {item.quantity} | {item.area} sqft total | INR {item.ratePerSqft}/sqft
       </Text>
       {onRemove ? (
         <Pressable onPress={onRemove} style={styles.removePill}>
@@ -23,6 +30,8 @@ export default function LineItemCard({ item, onRemove }) {
     </View>
   );
 }
+
+export default memo(LineItemCard);
 
 const styles = StyleSheet.create({
   card: {

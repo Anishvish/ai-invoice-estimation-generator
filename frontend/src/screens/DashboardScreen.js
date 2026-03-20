@@ -5,14 +5,16 @@ import AppButton from '../components/AppButton';
 import ProjectCard from '../components/ProjectCard';
 import SectionCard from '../components/SectionCard';
 import StatCard from '../components/StatCard';
-import { materialApi, projectApi } from '../services/api';
+import { companyApi, materialApi, projectApi } from '../services/api';
 import { useAppStore } from '../store/useAppStore';
 import { colors } from '../theme/colors';
 
 export default function DashboardScreen({ navigation }) {
   const projects = useAppStore((state) => state.projects);
+  const companies = useAppStore((state) => state.companies);
   const materials = useAppStore((state) => state.materials);
   const setProjects = useAppStore((state) => state.setProjects);
+  const setCompanies = useAppStore((state) => state.setCompanies);
   const setMaterials = useAppStore((state) => state.setMaterials);
   const setCurrentProject = useAppStore((state) => state.setCurrentProject);
   const [loading, setLoading] = useState(false);
@@ -23,17 +25,19 @@ export default function DashboardScreen({ navigation }) {
 
   const stats = useMemo(() => {
     const projectCount = projects.length;
+    const companyCount = companies.length;
     const materialCount = materials.length;
     const catalogStatus = materialCount ? 'Catalog ready' : 'No presets';
-    return { projectCount, materialCount, catalogStatus };
-  }, [materials.length, projects.length]);
+    return { projectCount, companyCount, materialCount, catalogStatus };
+  }, [companies.length, materials.length, projects.length]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [projectData, materialData] = await Promise.all([projectApi.list(), materialApi.list()]);
+      const [projectData, materialData, companyData] = await Promise.all([projectApi.list(), materialApi.list(), companyApi.list()]);
       setProjects(projectData);
       setMaterials(materialData);
+      setCompanies(companyData);
     } catch (error) {
       Alert.alert('Unable to load dashboard', 'Check backend connectivity and try again.');
     } finally {
@@ -56,7 +60,7 @@ export default function DashboardScreen({ navigation }) {
         <View style={styles.statsRow}>
           <StatCard label="Projects" value={String(stats.projectCount)} />
           <View style={styles.gap} />
-          <StatCard label="Material Rates" value={String(stats.materialCount)} tone="dark" />
+          <StatCard label="Companies" value={String(stats.companyCount)} tone="dark" />
         </View>
 
         <SectionCard style={styles.banner}>

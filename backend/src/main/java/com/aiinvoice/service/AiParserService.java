@@ -3,7 +3,6 @@ package com.aiinvoice.service;
 import com.aiinvoice.dto.ai.AiParseRequest;
 import com.aiinvoice.dto.ai.AiParseResponse;
 import com.aiinvoice.exception.BusinessException;
-import java.math.BigDecimal;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,13 +23,15 @@ public class AiParserService {
             throw new BusinessException("Could not parse measurement dimensions from input");
         }
 
-        BigDecimal length = new BigDecimal(matcher.group(1));
-        BigDecimal width = new BigDecimal(matcher.group(2));
+        int lengthFeet = (int) Double.parseDouble(matcher.group(1));
+        int widthFeet = (int) Double.parseDouble(matcher.group(2));
 
         return new AiParseResponse(
                 extractType(normalized),
-                length,
-                width,
+                lengthFeet,
+                0,
+                widthFeet,
+                0,
                 extractMaterial(normalized),
                 rawInput,
                 "mock-nlp-parser"

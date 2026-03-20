@@ -2,13 +2,19 @@ import { create } from 'zustand';
 
 export const useAppStore = create((set) => ({
   projects: [],
+  companies: [],
   materials: [],
   currentProject: null,
   currentEstimate: null,
   currentInvoice: null,
   draftItems: [],
   setProjects: (projects) => set({ projects }),
+  setCompanies: (companies) => set({ companies }),
   setMaterials: (materials) => set({ materials }),
+  addCompany: (company) =>
+    set((state) => ({
+      companies: [company, ...state.companies],
+    })),
   addProject: (project) =>
     set((state) => ({
       projects: [project, ...state.projects],

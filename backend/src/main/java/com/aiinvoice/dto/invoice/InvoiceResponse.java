@@ -6,10 +6,16 @@ import java.time.LocalDateTime;
 public record InvoiceResponse(
         Long invoiceId,
         String invoiceNumber,
-        String filePath,
+        String downloadUrl,
         String companyName,
+        String companyGstinMasked,
+        Boolean gstApplied,
         String clientName,
-        BigDecimal finalAmount,
+        BigDecimal subtotal,
+        BigDecimal gstAmount,
+        BigDecimal totalAmount,
+        BigDecimal advancePayment,
+        BigDecimal balanceDue,
         LocalDateTime generatedAt
 ) {
 }

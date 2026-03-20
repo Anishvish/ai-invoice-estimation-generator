@@ -36,17 +36,23 @@ public class Measurement {
     @Column(nullable = false)
     private String type;
 
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal length;
+    @Column(name = "length_inches", nullable = false)
+    private Integer lengthInches;
 
-    @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal width;
+    @Column(name = "width_inches", nullable = false)
+    private Integer widthInches;
+
+    @Column(nullable = false)
+    private Integer quantity;
 
     @Column(nullable = false)
     private String material;
 
     @Column(name = "rate_per_sqft", nullable = false, precision = 12, scale = 2)
     private BigDecimal ratePerSqft;
+
+    @Column(name = "unit_area", nullable = false, precision = 12, scale = 2)
+    private BigDecimal unitArea;
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal area;
